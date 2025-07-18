@@ -5,3 +5,4 @@ terraform.exe
 *.tfplan
 terraform.tfstate
 terraform.tfstate.backup
+secret.tfvars
