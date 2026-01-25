@@ -1,11 +1,23 @@
 variable "resource_group_name" {
-  description = "The name of the resource group"
   type        = string
+  default     = "RGDeafult"
+  description = "Location of the resource group."
+}
+
+variable "resource_group_location" {
+  type        = string
+  default     = "eastus"
+  description = "Location of the resource group."
 }
 
 variable "location" {
   description = "Location of the resources"
   type        = string
+}
+
+variable "vm_count" {
+  description = "Number of VMs to create"
+  type        = number
 }
 
 variable "vm_size" {
@@ -36,5 +48,14 @@ variable "tags" {
 
 variable "hostname" {
   description = "name for vm"
+  type = string
+}
+
+variable "subnet_ids" {
+  description = "The subnet IDs for the network interfaces"
+  type        = list(string)
+}
+variable "vm_subnet_id"{ # Changed from subnet_ids to vm_subnet_id 
+  description = "The ID of the subnet for the VM NICs"
   type = string
 }

@@ -1,13 +1,19 @@
-variable "resource_group_location" {
+/* variable "resource_group_location" {
   type        = string
   default     = "eastus"
-  description = "Location of the resource group."
-}
+ description = "Location of the resource group."
+} */
 
 variable "resource_group_name" {
   type        = string
-  default     = "RGDeafult"
+  default     = "RGDefault"
   description = "Location of the resource group."
+}
+
+variable "vm_count" {
+  description = "Number of VMs to create"
+  type        = number
+  default     = 2
 }
 
 variable "resource_group_name_prefix" {
@@ -39,7 +45,7 @@ variable "admin_username" {
 variable "admin_password" {
   description = "Admin password for the VM"
   type        = string
-  sensitive   = false
+  sensitive   = true
 }
 variable "vm_size" {
   description = "Size of the VM"
@@ -55,3 +61,29 @@ variable "hostname" {
   description = "name for vm"
   type = string
 }
+
+variable "location" {
+  type        = string
+  default     = "eastus"
+  description = "Location of the resources."
+} 
+
+variable "vnet_address_spaces" {
+  description = "List of VNet address spaces"
+  type        = list(string)
+ }
+
+variable "subnet_prefixes" {
+   description = "List of subnet prefixes"
+   type        = list(string)
+ }
+
+#variable "subnet_ids" {
+  #description = "The subnet IDs for the network interfaces"
+  #type        = list(string)
+#}
+
+#variable "vm_subnet_id" {
+  #description = "The subnet IDs for the network interfaces"
+  #type        = string
+#}
