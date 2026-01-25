@@ -1,0 +1,36 @@
+trigger:
+  branches:
+    include:
+      - Vm-Network-ModuleforMultiVmDeploy   # Run pipeline when changes are pushed to main branch
+
+pool:
+  vmImage: 'ubuntu-latest'   # Microsoft-hosted agent
+
+stages:
+  - stage: TerraformPlan
+    displayName: "Terraform Plan"
+    jobs:
+      - job: plan
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.x'
+          - script: |
+              terraform init
+              terraform plan -out=tfplan
+            displayName: "Terraform Init & Plan"
+          - publish: tfplan
+            artifact: terraform-plan
+
+  - stage: TerraformApply
+    displayName: "Terraform Apply"
+    dependsOn: TerraformPlan
+    condition: succeeded()
+    jobs:
+      - job: apply
+        steps:
+          - download: current
+            artifact: terraform-plan
+          - script: |
+              terraform apply tfplan
+            displayName: "Terraform Apply"
