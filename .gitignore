@@ -6,3 +6,4 @@ terraform.exe
 terraform.tfstate
 terraform.tfstate.backup
 secret.tfvars
+client_secret.txt
