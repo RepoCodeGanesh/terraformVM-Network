@@ -22,19 +22,19 @@ variable "resource_group_name_prefix" {
   description = "Prefix of the resource group name that's combined with a random ID so the name is unique in your Azure subscription."
 }
 
-variable "client_secret" { 
+variable "client_secret" {
   description = "The client secret for the service principal"
   type        = string
-  sensitive   = true 
+  sensitive   = true
 }
 
 variable "tags" {
   description = "A map of tags to assign to the resource group"
-  type        = map(string) 
+  type        = map(string)
   default = {
     Environment = "tag1"
     Dept        = "tag2"
-  } 
+  }
 }
 
 variable "admin_username" {
@@ -59,31 +59,31 @@ variable "vm_os" {
 
 variable "hostname" {
   description = "name for vm"
-  type = string
+  type        = string
 }
 
 variable "location" {
   type        = string
   default     = "eastus"
   description = "Location of the resources."
-} 
+}
 
 variable "vnet_address_spaces" {
   description = "List of VNet address spaces"
   type        = list(string)
- }
+}
 
 variable "subnet_prefixes" {
-   description = "List of subnet prefixes"
-   type        = list(string)
- }
+  description = "List of subnet prefixes"
+  type        = list(string)
+}
 
 #variable "subnet_ids" {
-  #description = "The subnet IDs for the network interfaces"
-  #type        = list(string)
+#description = "The subnet IDs for the network interfaces"
+#type        = list(string)
 #}
 
 #variable "vm_subnet_id" {
-  #description = "The subnet IDs for the network interfaces"
-  #type        = string
+#description = "The subnet IDs for the network interfaces"
+#type        = string
 #}
