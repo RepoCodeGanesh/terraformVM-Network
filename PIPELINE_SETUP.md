@@ -3,7 +3,45 @@
 ## Overview
 This guide provides step-by-step instructions for setting up a production-grade Terraform pipeline in Azure DevOps.
 
-## Prerequisites
+## Prerequisites - IMPORTANT: Install Terraform Extension
+
+### ⚠️ Required Extension
+Before proceeding with pipeline setup, you **MUST** install the **Terraform** extension from the Azure DevOps Marketplace:
+
+**Extension Details:**
+- **Name:** Terraform
+- **Publisher:** Microsoft DevLabs
+- **Installs:** 133,376+
+- **Link:** https://marketplace.visualstudio.com/items?itemName=ms-devlabs.custom-terraform-tasks
+
+### Installation Steps (Required Before Setup)
+1. Go to **Azure DevOps Organization** → **Organization Settings**
+2. Click **Extensions** 
+3. Click **Browse marketplace**
+4. Search for: `Terraform`
+5. Find **"Terraform"** published by **Microsoft DevLabs**
+6. Click **Get it free**
+7. Select your organization from dropdown
+8. Click **Install**
+9. **Wait 1-2 minutes** for installation to complete
+10. You'll receive a confirmation email
+
+### Verify Installation
+1. In Azure DevOps: **Organization Settings** → **Extensions**
+2. Look for **"Terraform"** in the installed extensions list
+3. Should show: ✅ Green checkmark + "Microsoft DevLabs" as publisher
+4. **Pipeline is now ready to use!**
+
+### Troubleshooting Extension Installation
+**If you don't see the extension:**
+- Clear browser cache (Ctrl+Shift+Delete)
+- Wait 5 minutes and refresh
+- Try different browser
+- Contact Azure DevOps support
+
+---
+
+### Other Prerequisites
 ✅ Azure DevOps organization and project created
 ✅ Azure Service Principal with appropriate permissions
 ✅ Azure Storage Account for Terraform state backend

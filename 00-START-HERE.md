@@ -6,7 +6,13 @@ You now have a **complete, enterprise-ready Azure DevOps pipeline** with compreh
 
 ---
 
-## 📦 What You Received
+## ⚠️ FIRST STEP: Install Terraform Extension
+
+**👉 Before anything else, follow: [EXTENSION_INSTALL.md](EXTENSION_INSTALL.md)** (2 minutes)
+
+This is **REQUIRED** for the pipeline to work.
+
+---
 
 ### ✅ Updated Pipeline File
 - **azure-pipelines.yml** - Completely rewritten with 6 production stages
@@ -34,10 +40,16 @@ You now have a **complete, enterprise-ready Azure DevOps pipeline** with compreh
 
 ### Day 1: Setup (2-3 hours)
 ```
-1. Read: README.md (15 min)
-2. Read: IMPLEMENTATION_SUMMARY.md (20 min)
-3. Follow: PIPELINE_SETUP.md (1-2 hours)
-4. Result: Pipeline configured ✅
+1. ⚠️ FIRST: Install Terraform Extension (2 min)
+   → Go to Azure DevOps Organization Settings → Extensions
+   → Search "Terraform" by Microsoft DevLabs
+   → Click Install
+   → Wait 1-2 minutes
+
+2. Read: README.md (15 min)
+3. Read: IMPLEMENTATION_SUMMARY.md (20 min)
+4. Follow: PIPELINE_SETUP.md (1-2 hours)
+5. Result: Pipeline configured ✅
 ```
 
 ### Day 2: First Deployment (3-4 hours)
