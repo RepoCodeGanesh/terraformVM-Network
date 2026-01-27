@@ -59,6 +59,11 @@ stages:
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
               backendAzureRmKey: '$(BACKEND_KEY)'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
 
           - task: TerraformTaskV2@2
             displayName: 'Terraform Format Check'
@@ -114,6 +119,11 @@ stages:
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
               backendAzureRmKey: '$(BACKEND_KEY)'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
 
           - task: TerraformTaskV2@2
             displayName: 'Terraform Plan'
@@ -124,7 +134,13 @@ stages:
                 -out=tfplan
                 -lock=true
                 -input=false
+                -var="client_secret=$(CLIENT_SECRET)"
               environmentServiceNameAzureRM: 'azuredevops-azure'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
 
           - script: |
               terraform show -json tfplan > tfplan.json
@@ -208,6 +224,11 @@ stages:
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
               backendAzureRmKey: '$(BACKEND_KEY)'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
 
           - task: TerraformTaskV2@2
             displayName: 'Terraform Apply'
@@ -218,8 +239,14 @@ stages:
                 -lock=true
                 -input=false
                 -auto-approve
+                -var="client_secret=$(CLIENT_SECRET)"
                 $(System.DefaultWorkingDirectory)/$(tfPlanArtifact)/tfplan
               environmentServiceNameAzureRM: 'azuredevops-azure'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
 
           - script: |
               echo "Terraform apply completed successfully!"
@@ -302,11 +329,21 @@ stages:
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
               backendAzureRmKey: '$(BACKEND_KEY)'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
 
           - task: TerraformTaskV2@2
             displayName: 'Terraform Destroy'
             inputs:
               provider: 'azurerm'
               command: 'destroy'
-              commandOptions: '-auto-approve -lock=true -input=false'
+              commandOptions: '-auto-approve -lock=true -input=false -var="client_secret=$(CLIENT_SECRET)"'
               environmentServiceNameAzureRM: 'azuredevops-azure'
+            env:
+              ARM_CLIENT_ID: $(CLIENT_ID)
+              ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+              ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+              ARM_TENANT_ID: $(TENANT_ID)
