@@ -1,0 +1,22 @@
+# Example Terraform Variables File
+# Copy this to terraform.tfvars and update with your actual values
+# Never commit terraform.tfvars to version control
+
+resource_group_name = "RGDefault"
+vm_count            = 2
+vm_size             = "Standard_B2s"
+
+# Admin credentials should be managed via Azure Key Vault in production
+admin_username = "azureuser"
+admin_password = "ChangeMe123!@#"
+
+# Client secret for Azure authentication
+client_secret = "your-client-secret-here"
+
+# Tags for resource organization and cost tracking
+tags = {
+  Environment = "Production"
+  Dept        = "Infrastructure"
+  ManagedBy   = "Terraform"
+  CostCenter  = "IT-001"
+}
