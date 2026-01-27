@@ -289,7 +289,7 @@ DEPLOYMENT_GUIDE.md ─→ Deploy infrastructure
 
 ## 💾 Critical Values (Reference Only)
 
-Service Connection: `Azure-Service-Connection`  
+Service Connection: `azuredevops-azure`  
 Variable Group: `Terraform-Secrets`  
 Storage Account: `tfstateforterrform`  
 State Container: `tfstate`  

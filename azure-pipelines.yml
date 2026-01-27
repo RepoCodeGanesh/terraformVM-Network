@@ -54,7 +54,7 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'init'
-              backendServiceArm: 'Azure-Service-Connection'
+              backendServiceArm: 'azuredevops-azure'
               backendAzureRmResourceGroupName: '$(BACKEND_RESOURCE_GROUP)'
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
@@ -109,7 +109,7 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'init'
-              backendServiceArm: 'Azure-Service-Connection'
+              backendServiceArm: 'azuredevops-azure'
               backendAzureRmResourceGroupName: '$(BACKEND_RESOURCE_GROUP)'
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
@@ -124,7 +124,7 @@ stages:
                 -out=tfplan
                 -lock=true
                 -input=false
-              environmentServiceNameAzureRM: 'Azure-Service-Connection'
+              environmentServiceNameAzureRM: 'azuredevops-azure'
 
           - script: |
               terraform show -json tfplan > tfplan.json
@@ -203,7 +203,7 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'init'
-              backendServiceArm: 'Azure-Service-Connection'
+              backendServiceArm: 'azuredevops-azure'
               backendAzureRmResourceGroupName: '$(BACKEND_RESOURCE_GROUP)'
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
@@ -219,7 +219,7 @@ stages:
                 -input=false
                 -auto-approve
                 $(System.DefaultWorkingDirectory)/$(tfPlanArtifact)/tfplan
-              environmentServiceNameAzureRM: 'Azure-Service-Connection'
+              environmentServiceNameAzureRM: 'azuredevops-azure'
 
           - script: |
               echo "Terraform apply completed successfully!"
@@ -251,7 +251,7 @@ stages:
           - task: AzureCLI@2
             displayName: 'Validate Azure Resources'
             inputs:
-              azureSubscription: 'Azure-Service-Connection'
+              azureSubscription: 'azuredevops-azure'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
@@ -297,7 +297,7 @@ stages:
             inputs:
               provider: 'azurerm'
               command: 'init'
-              backendServiceArm: 'Azure-Service-Connection'
+              backendServiceArm: 'azuredevops-azure'
               backendAzureRmResourceGroupName: '$(BACKEND_RESOURCE_GROUP)'
               backendAzureRmStorageAccountName: '$(BACKEND_STORAGE_ACCOUNT)'
               backendAzureRmContainerName: '$(BACKEND_CONTAINER)'
@@ -309,4 +309,4 @@ stages:
               provider: 'azurerm'
               command: 'destroy'
               commandOptions: '-auto-approve -lock=true -input=false'
-              environmentServiceNameAzureRM: 'Azure-Service-Connection'
+              environmentServiceNameAzureRM: 'azuredevops-azure'

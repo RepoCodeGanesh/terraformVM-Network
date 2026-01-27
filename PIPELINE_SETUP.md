@@ -50,7 +50,7 @@ Before proceeding with pipeline setup, you **MUST** install the **Terraform** ex
 ## Setup Steps
 
 ### 1. Verify Service Connection
-- **Name:** Azure-Service-Connection
+- **Name:** azuredevops-azure
 - **Type:** Azure Resource Manager
 - **Authentication:** Service Principal
 - **Scope:** Your Azure Subscription

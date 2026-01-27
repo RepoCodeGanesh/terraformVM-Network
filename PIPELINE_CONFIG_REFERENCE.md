@@ -4,7 +4,7 @@ This file provides the configuration reference for the production-grade Terrafor
 
 ## Service Connection Requirements
 
-### Name: Azure-Service-Connection
+### Name: azuredevops-azure
 **Type:** Azure Resource Manager  
 **Authentication:** Service Principal  
 
@@ -247,7 +247,7 @@ Logs: [Link to pipeline run]
 **Solution:**
 ```
 1. Go to Project Settings → Service connections
-2. Verify connection name matches: Azure-Service-Connection
+2. Verify connection name matches: azuredevops-azure
 3. Check service connection has access to subscription
 4. Grant Pipeline permissions to connection
 ```
