@@ -52,7 +52,6 @@ stages:
 - stage: Apply
   displayName: Terraform Apply
   dependsOn: Plan
-  condition: and(succeeded(), eq(variables['RunApply'], 'true'))
   jobs:
   - deployment: apply
     displayName: Apply
