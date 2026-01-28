@@ -44,10 +44,27 @@ stages:
           export TF_VAR_tenant_id=$(TENANT_ID)
           terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
           terraform plan -input=false -out=tfplan
+          # Generate categorized plan summary
+          terraform show -json tfplan > tfplan.json
+          echo "=== TERRAFORM PLAN SUMMARY ===" > tfplan-summary.txt
+          echo "" >> tfplan-summary.txt
+          jq -r '
+            [.resource_changes[] | {resource: "\(.type).\(.name)\(if .index then "[\(.index)]" else "" end)", actions: .change.actions}] |
+            group_by(.actions | join("-")) |
+            map({action: .[0].actions | join("-"), resources: map(.resource)}) |
+            sort_by(.action) |
+            .[] |
+            "\(.action | ascii_upcase) (\(.resources | length) resource\(if (.resources | length) > 1 then "s" else "" end)):\n" + (.resources | map("  \(.)") | join("\n"))
+          ' tfplan.json >> tfplan-summary.txt 2>/dev/null || echo "Plan summary generated."
+          cat tfplan-summary.txt
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(System.DefaultWorkingDirectory)/tfplan'
         artifact: 'tfplan'
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(System.DefaultWorkingDirectory)/tfplan-summary.txt'
+        artifact: 'tfplan-summary'
 
 - stage: Apply
   displayName: Terraform Apply
@@ -91,3 +108,42 @@ stages:
                 export TF_VAR_tenant_id=$(TENANT_ID)
                 terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
                 terraform apply -input=false tfplan
+
+- stage: Destroy
+  displayName: Terraform Destroy
+  dependsOn: Plan
+  jobs:
+  - deployment: destroy
+    displayName: Destroy
+    environment: 'terraform-prod'
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - task: AzureCLI@2
+            displayName: Install Terraform and Destroy
+            inputs:
+              azureSubscription: 'azuredevops-azure'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -e
+                echo "Installing Terraform $(TERRAFORM_VERSION)"
+                wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
+                unzip -o /tmp/terraform.zip -d /tmp
+                sudo mv /tmp/terraform /usr/local/bin/terraform
+                terraform version
+                export ARM_CLIENT_ID=$(CLIENT_ID)
+                export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                export ARM_TENANT_ID=$(TENANT_ID)
+                # Export TF_VAR_* so Terraform root module variables receive values from the pipeline
+                export TF_VAR_client_secret=$(CLIENT_SECRET)
+                export TF_VAR_client_id=$(CLIENT_ID)
+                export TF_VAR_subscription_id=$(SUBSCRIPTION_ID)
+                export TF_VAR_tenant_id=$(TENANT_ID)
+                terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
+                terraform destroy -auto-approve
