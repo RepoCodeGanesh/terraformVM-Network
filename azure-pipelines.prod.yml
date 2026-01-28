@@ -2,6 +2,11 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - '**/*.tf'
+      - 'azure-pipelines.prod.yml'
+
 pr:
   branches:
     include:
@@ -32,31 +37,7 @@ variables:
 - name: TERRAFORM_VERSION
   value: '1.5.7'
 - name: TF_INPUT
-- name: TF_INPUT
   value: 'false'
-- name: TF_IN_AUTOMATION
-  value: 'true'
-- ${{ if eq(parameters.environment, 'dev') }}:
-  - name: ENVIRONMENT
-    value: 'dev'
-  - name: TF_WORKSPACE
-    value: 'dev'
-  - name: TFVARS_FILE
-    value: 'terraform.dev.tfvars'
-- ${{ if eq(parameters.environment, 'staging') }}:
-  - name: ENVIRONMENT
-    value: 'staging'
-  - name: TF_WORKSPACE
-    value: 'staging'
-  - name: TFVARS_FILE
-    value: 'terraform.staging.tfvars'
-- ${{ if eq(parameters.environment, 'prod') }}:
-  - name: ENVIRONMENT
-    value: 'prod'
-  - name: TF_WORKSPACE
-    value: 'prod'
-  - name: TFVARS_FILE
-    value: 'terraform.prod.tfvars'
 - name: TF_IN_AUTOMATION
   value: 'true'
 - ${{ if eq(parameters.environment, 'dev') }}:
@@ -85,12 +66,7 @@ stages:
 - stage: Validation
   displayName: 'Terraform Validation & Security'
   condition: eq('${{ parameters.runValidation }}', 'true')
-- stage: Validation
-  displayName: 'Terraform Validation & Security'
-  condition: eq('${{ parameters.runValidation }}', 'true')
   jobs:
-  - job: ValidateAndScan
-    displayName: Validate, Format Check & Security Scan
   - job: ValidateAndScan
     displayName: Validate, Format Check & Security Scan
     pool:
@@ -98,9 +74,7 @@ stages:
     steps:
     - checkout: self
     
-    
     - task: AzureCLI@2
-      displayName: Setup Terraform & Validate
       displayName: Setup Terraform & Validate
       inputs:
         azureSubscription: 'azuredevops-azure'
@@ -108,7 +82,6 @@ stages:
         scriptLocation: 'inlineScript'
         inlineScript: |
           set -e
-          echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
           echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
           wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
           unzip -o /tmp/terraform.zip -d /tmp
@@ -174,73 +147,10 @@ stages:
           
           echo ""
           echo "==== Setting Azure Credentials ===="
-          
-          echo ""
-          echo "==== Terraform Format Check ===="
-          terraform fmt -check -recursive . || (echo "Files not formatted. Run: terraform fmt -recursive ." && exit 1)
-          
-          echo ""
-          echo "==== Terraform Init (Validation) ===="
-          terraform init -input=false -backend=false
-          
-          echo ""
-          echo "==== Terraform Validate ===="
-          terraform validate
-    
-    - task: Bash@3
-      displayName: Security Scan - TFSec
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "==== Installing TFSec ===="
-          curl -sL https://github.com/aquasecurity/tfsec/releases/download/v1.28.0/tfsec-linux-amd64 -o /tmp/tfsec
-          chmod +x /tmp/tfsec
-          echo ""
-          echo "==== Running TFSec Scan ===="
-          /tmp/tfsec . --minimum-severity MEDIUM --format json > tfsec-report.json || true
-          cat tfsec-report.json | jq '.' || echo "No high-severity issues found."
-    
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Security Reports
-      condition: always()
-      inputs:
-        targetPath: '$(System.DefaultWorkingDirectory)/tfsec-report.json'
-        artifact: 'security-report'
-
-- stage: Plan
-  displayName: 'Terraform Plan - $(ENVIRONMENT)'
-  dependsOn: []
-  condition: succeeded()
-  jobs:
-  - job: TerraformPlan
-    displayName: Plan Infrastructure Changes
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - checkout: self
-    
-    - task: AzureCLI@2
-      displayName: Terraform Init & Plan
-      inputs:
-        azureSubscription: 'azuredevops-azure'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          set -e
-          echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
-          wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
-          unzip -o /tmp/terraform.zip -d /tmp
-          sudo mv /tmp/terraform /usr/local/bin/terraform
-          
-          echo ""
-          echo "==== Setting Azure Credentials ===="
           export ARM_CLIENT_ID=$(CLIENT_ID)
           export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
           export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
           export ARM_TENANT_ID=$(TENANT_ID)
-          
-          echo ""
-          echo "==== Exporting Terraform Variables ===="
           
           echo ""
           echo "==== Exporting Terraform Variables ===="
@@ -260,9 +170,8 @@ stages:
             -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
           
           echo ""
-          echo "==== Selecting Workspace: $(ENVIRONMENT) ===="
-          unset TF_WORKSPACE
-          terraform workspace select $(ENVIRONMENT) || terraform workspace new $(ENVIRONMENT)
+          echo "==== Selecting Workspace: $(TF_WORKSPACE) ===="
+          terraform workspace select $(TF_WORKSPACE) || terraform workspace new $(TF_WORKSPACE)
           
           echo ""
           echo "==== Running Terraform Plan ===="
@@ -319,30 +228,8 @@ stages:
           /tmp/infracost breakdown --path tfplan_$(ENVIRONMENT).json --format table > cost-estimate_$(ENVIRONMENT).txt 2>&1 || echo "Cost estimation skipped."
           cat cost-estimate_$(ENVIRONMENT).txt
 
-          ' tfplan_$(ENVIRONMENT).json >> tfplan-summary_$(ENVIRONMENT).txt 2>/dev/null || echo "Plan summary generated."
-          
-          echo ""
-          cat tfplan-summary_$(ENVIRONMENT).txt
-
-    - task: Bash@3
-      displayName: Estimate Infrastructure Costs (Infracost)
-      condition: eq('${{ parameters.runCostEstimate }}', 'true')
-      continueOnError: true
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "==== Installing Infracost ===="
-          curl -sL https://github.com/infracost/infracost/releases/latest/download/infracost-linux-x64.tar.gz | tar xz -C /tmp
-          /tmp/infracost --version
-          
-          echo ""
-          echo "==== Estimating Infrastructure Costs ===="
-          /tmp/infracost breakdown --path tfplan_$(ENVIRONMENT).json --format table > cost-estimate_$(ENVIRONMENT).txt 2>&1 || echo "Cost estimation skipped."
-          cat cost-estimate_$(ENVIRONMENT).txt
-
     - task: PublishPipelineArtifact@1
       displayName: Publish Plan Artifacts
-      displayName: Publish Plan Artifacts
       inputs:
         targetPath: '$(System.DefaultWorkingDirectory)'
         artifact: 'terraform-plan-$(ENVIRONMENT)'
@@ -360,28 +247,7 @@ stages:
     steps:
     - task: ManualValidation@0
       displayName: Approve/Reject Apply
-        targetPath: '$(System.DefaultWorkingDirectory)'
-        artifact: 'terraform-plan-$(ENVIRONMENT)'
-        publishLocation: 'pipeline'
-
-- stage: Review
-  displayName: 'Manual Review - $(ENVIRONMENT)'
-  dependsOn: Plan
-  condition: succeeded()
-  jobs:
-  - job: waitForValidation
-    displayName: Awaiting Approval to Apply
-    pool: server
-    timeoutInMinutes: 1440
-    steps:
-    - task: ManualValidation@0
-      displayName: Approve/Reject Apply
       inputs:
-        notifyUsers: 'richt@example.com'
-        instructions: |
-          Review the Terraform plan artifacts and cost estimate.
-          Approve to proceed with Apply, or Reject to cancel.
-        onTimeout: 'reject'
         notifyUsers: 'richt@example.com'
         instructions: |
           Review the Terraform plan artifacts and cost estimate.
@@ -392,13 +258,7 @@ stages:
   displayName: 'Terraform Apply - $(ENVIRONMENT)'
   dependsOn: Review
   condition: succeeded()
-  displayName: 'Terraform Apply - $(ENVIRONMENT)'
-  dependsOn: Review
-  condition: succeeded()
   jobs:
-  - deployment: TerraformApply
-    displayName: Apply Infrastructure Changes
-    environment: 'terraform-$(ENVIRONMENT)'
   - deployment: TerraformApply
     displayName: Apply Infrastructure Changes
     environment: 'terraform-$(ENVIRONMENT)'
@@ -410,18 +270,13 @@ stages:
           steps:
           - checkout: self
           
-          
           - task: DownloadPipelineArtifact@2
-            displayName: Download Plan Artifacts
             displayName: Download Plan Artifacts
             inputs:
               artifact: 'terraform-plan-$(ENVIRONMENT)'
-              artifact: 'terraform-plan-$(ENVIRONMENT)'
               path: '$(System.DefaultWorkingDirectory)'
           
-          
           - task: AzureCLI@2
-            displayName: Terraform Apply
             displayName: Terraform Apply
             inputs:
               azureSubscription: 'azuredevops-azure'
@@ -430,13 +285,9 @@ stages:
               inlineScript: |
                 set -e
                 echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
-                echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
                 wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
                 unzip -o /tmp/terraform.zip -d /tmp
                 sudo mv /tmp/terraform /usr/local/bin/terraform
-                
-                echo ""
-                echo "==== Setting Azure Credentials ===="
                 
                 echo ""
                 echo "==== Setting Azure Credentials ===="
@@ -444,9 +295,6 @@ stages:
                 export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
                 export ARM_TENANT_ID=$(TENANT_ID)
-                
-                echo ""
-                echo "==== Exporting Terraform Variables ===="
                 
                 echo ""
                 echo "==== Exporting Terraform Variables ===="
@@ -466,9 +314,8 @@ stages:
                   -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
                 
                 echo ""
-                echo "==== Selecting Workspace: $(ENVIRONMENT) ===="
-                unset TF_WORKSPACE
-                terraform workspace select $(ENVIRONMENT)
+                echo "==== Selecting Workspace: $(TF_WORKSPACE) ===="
+                terraform workspace select $(TF_WORKSPACE)
                 
                 echo ""
                 echo "==== Applying Terraform Plan ===="
@@ -487,14 +334,9 @@ stages:
 
 - stage: Destroy
   displayName: 'Terraform Destroy - $(ENVIRONMENT)'
-  displayName: 'Terraform Destroy - $(ENVIRONMENT)'
   dependsOn: Plan
   condition: and(succeeded(), eq('${{ variables['Build.SourceBranch'] }}', 'refs/heads/main'))
-  condition: and(succeeded(), eq('${{ variables['Build.SourceBranch'] }}', 'refs/heads/main'))
   jobs:
-  - deployment: TerraformDestroy
-    displayName: Destroy Infrastructure
-    environment: 'terraform-$(ENVIRONMENT)-destroy'
   - deployment: TerraformDestroy
     displayName: Destroy Infrastructure
     environment: 'terraform-$(ENVIRONMENT)-destroy'
@@ -506,9 +348,7 @@ stages:
           steps:
           - checkout: self
           
-          
           - task: AzureCLI@2
-            displayName: Terraform Destroy
             displayName: Terraform Destroy
             inputs:
               azureSubscription: 'azuredevops-azure'
@@ -522,18 +362,9 @@ stages:
                 
                 echo ""
                 echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
-                echo "==== ⚠️  WARNING: DESTROYING INFRASTRUCTURE IN $(ENVIRONMENT) ⚠️ ===="
-                echo "This action cannot be undone!"
-                sleep 5
-                
-                echo ""
-                echo "==== Installing Terraform $(TERRAFORM_VERSION) ===="
                 wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
                 unzip -o /tmp/terraform.zip -d /tmp
                 sudo mv /tmp/terraform /usr/local/bin/terraform
-                
-                echo ""
-                echo "==== Setting Azure Credentials ===="
                 
                 echo ""
                 echo "==== Setting Azure Credentials ===="
@@ -541,9 +372,6 @@ stages:
                 export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
                 export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
                 export ARM_TENANT_ID=$(TENANT_ID)
-                
-                echo ""
-                echo "==== Exporting Terraform Variables ===="
                 
                 echo ""
                 echo "==== Exporting Terraform Variables ===="
@@ -563,9 +391,8 @@ stages:
                   -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
                 
                 echo ""
-                echo "==== Selecting Workspace: $(ENVIRONMENT) ===="
-                unset TF_WORKSPACE
-                terraform workspace select $(ENVIRONMENT)
+                echo "==== Selecting Workspace: $(TF_WORKSPACE) ===="
+                terraform workspace select $(TF_WORKSPACE)
                 
                 echo ""
                 echo "==== Destroying Infrastructure ===="
