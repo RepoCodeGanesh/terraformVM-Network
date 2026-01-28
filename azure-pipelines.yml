@@ -1,0 +1,84 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+- group: Terraform-Secrets
+- name: TERRAFORM_VERSION
+  value: '1.5.7'
+- name: RunApply
+  value: 'false'
+
+stages:
+- stage: Plan
+  displayName: Terraform Plan
+  jobs:
+  - job: plan
+    displayName: Plan
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: Install Terraform and Run Plan
+      inputs:
+        azureSubscription: 'azuredevops-azure'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          set -e
+          echo "Installing Terraform $(TERRAFORM_VERSION)"
+          wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
+          unzip -o /tmp/terraform.zip -d /tmp
+          sudo mv /tmp/terraform /usr/local/bin/terraform
+          terraform version
+          export ARM_CLIENT_ID=$(CLIENT_ID)
+          export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
+          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+          export ARM_TENANT_ID=$(TENANT_ID)
+          terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
+          terraform plan -input=false -out=tfplan
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(System.DefaultWorkingDirectory)/tfplan'
+        artifact: 'tfplan'
+
+- stage: Apply
+  displayName: Terraform Apply
+  dependsOn: Plan
+  condition: and(succeeded(), eq(variables['RunApply'], 'true'))
+  jobs:
+  - deployment: apply
+    displayName: Apply
+    environment: 'terraform-prod'
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: 'tfplan'
+              path: '$(System.DefaultWorkingDirectory)'
+          - task: AzureCLI@2
+            displayName: Install Terraform and Apply
+            inputs:
+              azureSubscription: 'azuredevops-azure'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -e
+                echo "Installing Terraform $(TERRAFORM_VERSION)"
+                wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
+                unzip -o /tmp/terraform.zip -d /tmp
+                sudo mv /tmp/terraform /usr/local/bin/terraform
+                terraform version
+                export ARM_CLIENT_ID=$(CLIENT_ID)
+                export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
+                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
+                export ARM_TENANT_ID=$(TENANT_ID)
+                terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
+                terraform apply -input=false tfplan
