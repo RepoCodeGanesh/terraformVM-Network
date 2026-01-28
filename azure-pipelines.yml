@@ -1,149 +1,58 @@
+# Production-Grade Terraform Pipeline
+# Use azure-pipelines.prod.yml for the latest version with:
+# - Multi-environment support (dev/staging/prod)
+# - Validation & security checks
+# - Cost estimation
+# - Manual approval gates
+# - Workspace management
+
 trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - '**/*.tf'
+      - 'azure-pipelines.yml'
+      - 'azure-pipelines.prod.yml'
 
-variables:
-- group: Terraform-Secrets
-- name: TERRAFORM_VERSION
-  value: '1.5.7'
-- name: RunApply
-  value: 'false'
+pool:
+  vmImage: 'ubuntu-latest'
 
-stages:
-- stage: Plan
-  displayName: Terraform Plan
-  jobs:
-  - job: plan
-    displayName: Plan
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - checkout: self
-    - task: AzureCLI@2
-      displayName: Install Terraform and Run Plan
-      inputs:
-        azureSubscription: 'azuredevops-azure'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          set -e
-          echo "Installing Terraform $(TERRAFORM_VERSION)"
-          wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
-          unzip -o /tmp/terraform.zip -d /tmp
-          sudo mv /tmp/terraform /usr/local/bin/terraform
-          terraform version
-          export ARM_CLIENT_ID=$(CLIENT_ID)
-          export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
-          export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
-          export ARM_TENANT_ID=$(TENANT_ID)
-          # Export TF_VAR_* so Terraform root module variables receive values from the pipeline
-          export TF_VAR_client_secret=$(CLIENT_SECRET)
-          export TF_VAR_client_id=$(CLIENT_ID)
-          export TF_VAR_subscription_id=$(SUBSCRIPTION_ID)
-          export TF_VAR_tenant_id=$(TENANT_ID)
-          terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
-          terraform plan -input=false -out=tfplan
-          # Generate categorized plan summary
-          terraform show -json tfplan > tfplan.json
-          echo "=== TERRAFORM PLAN SUMMARY ===" > tfplan-summary.txt
-          echo "" >> tfplan-summary.txt
-          jq -r '
-            [.resource_changes[] | {resource: "\(.type).\(.name)\(if .index then "[\(.index)]" else "" end)", actions: .change.actions}] |
-            group_by(.actions | join("-")) |
-            map({action: .[0].actions | join("-"), resources: map(.resource)}) |
-            sort_by(.action) |
-            .[] |
-            "\(.action | ascii_upcase) (\(.resources | length) resource\(if (.resources | length) > 1 then "s" else "" end)):\n" + (.resources | map("  \(.)") | join("\n"))
-          ' tfplan.json >> tfplan-summary.txt 2>/dev/null || echo "Plan summary generated."
-          cat tfplan-summary.txt
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(System.DefaultWorkingDirectory)/tfplan'
-        artifact: 'tfplan'
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(System.DefaultWorkingDirectory)/tfplan-summary.txt'
-        artifact: 'tfplan-summary'
-
-- stage: Apply
-  displayName: Terraform Apply
-  dependsOn: Plan
-  jobs:
-  - deployment: apply
-    displayName: Apply
-    environment: 'terraform-prod'
-    pool:
-      vmImage: ubuntu-latest
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: self
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifact: 'tfplan'
-              path: '$(System.DefaultWorkingDirectory)'
-          - task: AzureCLI@2
-            displayName: Install Terraform and Apply
-            inputs:
-              azureSubscription: 'azuredevops-azure'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                set -e
-                echo "Installing Terraform $(TERRAFORM_VERSION)"
-                wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
-                unzip -o /tmp/terraform.zip -d /tmp
-                sudo mv /tmp/terraform /usr/local/bin/terraform
-                terraform version
-                export ARM_CLIENT_ID=$(CLIENT_ID)
-                export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
-                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
-                export ARM_TENANT_ID=$(TENANT_ID)
-                # Export TF_VAR_* so Terraform root module variables receive values from the pipeline
-                export TF_VAR_client_secret=$(CLIENT_SECRET)
-                export TF_VAR_client_id=$(CLIENT_ID)
-                export TF_VAR_subscription_id=$(SUBSCRIPTION_ID)
-                export TF_VAR_tenant_id=$(TENANT_ID)
-                terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
-                terraform apply -input=false tfplan
-
-- stage: Destroy
-  displayName: Terraform Destroy
-  dependsOn: Plan
-  jobs:
-  - deployment: destroy
-    displayName: Destroy
-    environment: 'terraform-prod'
-    pool:
-      vmImage: ubuntu-latest
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: self
-          - task: AzureCLI@2
-            displayName: Install Terraform and Destroy
-            inputs:
-              azureSubscription: 'azuredevops-azure'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                set -e
-                echo "Installing Terraform $(TERRAFORM_VERSION)"
-                wget -q https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip -O /tmp/terraform.zip
-                unzip -o /tmp/terraform.zip -d /tmp
-                sudo mv /tmp/terraform /usr/local/bin/terraform
-                terraform version
-                export ARM_CLIENT_ID=$(CLIENT_ID)
-                export ARM_CLIENT_SECRET=$(CLIENT_SECRET)
-                export ARM_SUBSCRIPTION_ID=$(SUBSCRIPTION_ID)
-                export ARM_TENANT_ID=$(TENANT_ID)
-                # Export TF_VAR_* so Terraform root module variables receive values from the pipeline
-                export TF_VAR_client_secret=$(CLIENT_SECRET)
-                export TF_VAR_client_id=$(CLIENT_ID)
-                export TF_VAR_subscription_id=$(SUBSCRIPTION_ID)
-                export TF_VAR_tenant_id=$(TENANT_ID)
-                terraform init -input=false -backend-config="storage_account_name=$(BACKEND_STORAGE_ACCOUNT)" -backend-config="container_name=$(BACKEND_CONTAINER)" -backend-config="key=$(BACKEND_KEY)" -backend-config="resource_group_name=$(BACKEND_RESOURCE_GROUP)" -backend-config="access_key=$(BACKEND_STORAGE_KEY)"
-                terraform destroy -auto-approve
+jobs:
+- job: NotifyUpgrade
+  displayName: Upgrade to Production Pipeline
+  steps:
+  - script: |
+      echo "╔════════════════════════════════════════════════════════════════╗"
+      echo "║ 🚀 Production Pipeline Configured                             ║"
+      echo "╠════════════════════════════════════════════════════════════════╣"
+      echo "║ The new production pipeline is now available:                  ║"
+      echo "║                                                                ║"
+      echo "║ 📄 File: azure-pipelines.prod.yml                             ║"
+      echo "║                                                                ║"
+      echo "║ ✨ Features:                                                   ║"
+      echo "║    • Multi-environment support (dev/staging/prod)             ║"
+      echo "║    • Validation & security scans (TFSec)                       ║"
+      echo "║    • Cost estimation (Infracost)                               ║"
+      echo "║    • Manual approval gates                                     ║"
+      echo "║    • Terraform workspace management                           ║"
+      echo "║    • Categorized plan summaries                               ║"
+      echo "║    • Separate tfvars per environment                          ║"
+      echo "║                                                                ║"
+      echo "║ 📋 Next Steps:                                                 ║"
+      echo "║    1. In Azure DevOps, create a new pipeline                   ║"
+      echo "║    2. Point it to azure-pipelines.prod.yml                     ║"
+      echo "║    3. Create environments for approval gates:                  ║"
+      echo "║       - terraform-dev                                         ║"
+      echo "║       - terraform-staging                                     ║"
+      echo "║       - terraform-prod                                        ║"
+      echo "║       - terraform-prod-destroy                                ║"
+      echo "║                                                                ║"
+      echo "║ 🔑 Requirements:                                               ║"
+      echo "║    • Create terraform.dev.tfvars file                          ║"
+      echo "║    • Create terraform.staging.tfvars file                      ║"
+      echo "║    • Create terraform.prod.tfvars file                         ║"
+      echo "║                                                                ║"
+      echo "╚════════════════════════════════════════════════════════════════╝"
+    displayName: 'Display Production Pipeline Info'
