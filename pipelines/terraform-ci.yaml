@@ -41,6 +41,11 @@ steps:
     backendAzureRmStorageAccountName: 'tfstateforterrform'
     backendAzureRmContainerName: 'tfstate'
     backendAzureRmKey: 'prod.terraform.tfstate'
+  env:
+    ARM_CLIENT_ID: $(CLIENT_ID)
+    ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+    ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+    ARM_TENANT_ID: $(TENANT_ID)
 
 - task: TerraformTaskV3@3
   displayName: 'Terraform Validate'
@@ -48,6 +53,11 @@ steps:
     provider: 'azurerm'
     command: 'validate'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
+  env:
+    ARM_CLIENT_ID: $(CLIENT_ID)
+    ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+    ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+    ARM_TENANT_ID: $(TENANT_ID)
 
 - task: AzureCLI@2
   displayName: 'Terraform Plan'
@@ -65,7 +75,6 @@ steps:
     ARM_CLIENT_SECRET: $(CLIENT_SECRET)
     ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
     ARM_TENANT_ID: $(TENANT_ID)
-    TF_VAR_client_secret: $(CLIENT_SECRET)
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Terraform Plan Artifact'
