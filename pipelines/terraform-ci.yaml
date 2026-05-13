@@ -36,10 +36,10 @@ steps:
     provider: 'azurerm'
     command: 'init'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
-    backendServiceArm: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'  # Azure service connection
-    backendAzureRmResourceGroupName: 'terraform'  # From backend.tf
-    backendAzureRmStorageAccountName: 'tfstateforterrform'  # From backend.tf
-    backendAzureRmContainerName: 'tfstate'  # From backend.tf
+    backendServiceArm: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
+    backendAzureRmResourceGroupName: 'terraform'
+    backendAzureRmStorageAccountName: 'tfstateforterrform'
+    backendAzureRmContainerName: 'tfstate'
     backendAzureRmKey: 'prod.terraform.tfstate'
 
 - task: TerraformTaskV3@3
@@ -49,11 +49,20 @@ steps:
     command: 'validate'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-- script: |
-    terraform plan -no-color -out=tfplan | tee plan.txt
+- task: AzureCLI@2
   displayName: 'Terraform Plan'
-  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  inputs:
+    azureSubscription: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      terraform plan -no-color -out=tfplan | tee plan.txt
+    workingDirectory: '$(System.DefaultWorkingDirectory)'
   env:
+    ARM_CLIENT_ID: $(CLIENT_ID)
+    ARM_CLIENT_SECRET: $(CLIENT_SECRET)
+    ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+    ARM_TENANT_ID: $(TENANT_ID)
     TF_VAR_client_secret: $(CLIENT_SECRET)
 
 - task: PublishBuildArtifacts@1
@@ -69,4 +78,3 @@ steps:
     PathtoPublish: '$(System.DefaultWorkingDirectory)/plan.txt'
     ArtifactName: 'terraform-plan-text'
     publishLocation: 'Container'
-
