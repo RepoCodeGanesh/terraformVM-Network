@@ -61,8 +61,6 @@ steps:
     backendAzureRmContainerName: 'tfstate'
     backendAzureRmKey: '$(Build.SourceBranchName).terraform.tfstate'
     commandOptions: '-no-color -out=tfplan'
-  env:
-    TF_VAR_client_secret: $(CLIENT_SECRET)
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Terraform Plan Artifact'
