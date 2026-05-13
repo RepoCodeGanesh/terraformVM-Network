@@ -1,77 +1,89 @@
-trigger:
-  branches:
-    include:
-      - main
-      - development
-  paths:
-    include:
-      - '**/*.tf'
-      - '**/*.tfvars'
+/* variable "resource_group_location" {
+  type        = string
+  default     = "eastus"
+ description = "Location of the resource group.."
+} */
 
-pr:
-  branches:
-    include:
-      - main
-      - development
-  paths:
-    include:
-      - '**/*.tf'
-      - '**/*.tfvars'
+variable "resource_group_name" {
+  type        = string
+  default     = "RGDefault"
+  description = "Location of the resource group."
+}
 
-variables:
-- group: Terraform-Secrets
+variable "vm_count" {
+  description = "Number of VMs to create"
+  type        = number
+  default     = 2
+}
 
-pool:
-  vmImage: 'ubuntu-latest'
+variable "resource_group_name_prefix" {
+  type        = string
+  default     = "rg2"
+  description = "Prefix of the resource group name that's combined with a random ID so the name is unique in your Azure subscription."
+}
 
-steps:
-- task: TerraformInstaller@0
-  displayName: 'Install Terraform'
-  inputs:
-    terraformVersion: '1.5.0'
+variable "client_secret" {
+  description = "The client secret for the service principal"
+  type        = string
+  sensitive   = true
+}
 
-- task: TerraformTaskV3@3
-  displayName: 'Terraform Init'
-  inputs:
-    provider: 'azurerm'
-    command: 'init'
-    workingDirectory: '$(System.DefaultWorkingDirectory)'
-    backendServiceArm: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
-    backendAzureRmResourceGroupName: 'terraform'
-    backendAzureRmStorageAccountName: 'tfstateforterrform'
-    backendAzureRmContainerName: 'tfstate'
-    backendAzureRmKey: '$(Build.SourceBranchName).terraform.tfstate'
+variable "tags" {
+  description = "A map of tags to assign to the resource group"
+  type        = map(string)
+  default = {
+    Environment = "tag1"
+    Dept        = "tag2"
+  }
+}
 
-- task: TerraformTaskV3@3
-  displayName: 'Terraform Validate'
-  inputs:
-    provider: 'azurerm'
-    command: 'validate'
-    workingDirectory: '$(System.DefaultWorkingDirectory)'
+variable "admin_username" {
+  description = "Admin username for the VM"
+  type        = string
+}
 
-- task: TerraformTaskV3@3
-  displayName: 'Terraform Plan'
-  inputs:
-    provider: 'azurerm'
-    command: 'plan'
-    workingDirectory: '$(System.DefaultWorkingDirectory)'
-    environmentServiceNameAzureRM: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
-    backendAzureRmResourceGroupName: 'terraform'
-    backendAzureRmStorageAccountName: 'tfstateforterrform'
-    backendAzureRmContainerName: 'tfstate'
-    backendAzureRmKey: '$(Build.SourceBranchName).terraform.tfstate'
-    commandOptions: '-no-color -out=tfplan'
+variable "admin_password" {
+  description = "Admin password for the VM"
+  type        = string
+  sensitive   = true
+}
+variable "vm_size" {
+  description = "Size of the VM"
+  type        = string
+}
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Terraform Plan Artifact'
-  inputs:
-    PathtoPublish: '$(System.DefaultWorkingDirectory)/tfplan'
-    ArtifactName: 'terraform-plan'
-    publishLocation: 'Container'
+variable "vm_os" {
+  description = "OS version for the VM"
+  type        = string
+}
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Terraform Plan Text'
-  inputs:
-    PathtoPublish: '$(System.DefaultWorkingDirectory)/plan.txt'
-    ArtifactName: 'terraform-plan-text'
-    publishLocation: 'Container'
+variable "hostname" {
+  description = "name for vm"
+  type        = string
+}
+
+variable "location" {
+  type        = string
+  default     = "eastus"
+  description = "Location of the resources."
+}
+
+variable "vnet_address_spaces" {
+  description = "List of VNet address spaces"
+  type        = list(string)
+}
+
+variable "subnet_prefixes" {
+  description = "List of subnet prefixes"
+  type        = list(string)
+}
+
+#variable "subnet_ids" {
+#description = "The subnet IDs for the network interfaces"
+#type        = list(string)
+#}
+
+#variable "vm_subnet_id" {
+#description = "The subnet IDs for the network interfaces"
+#type        = string
+#}
