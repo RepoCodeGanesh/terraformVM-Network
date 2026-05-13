@@ -64,6 +64,11 @@ steps:
   env:
     TF_VAR_client_secret: $(CLIENT_SECRET)
 
+# Generate human-readable plan.txt
+- script: terraform show -no-color tfplan > plan.txt
+  displayName: 'Generate Terraform Plan Text'
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Terraform Plan Artifact'
