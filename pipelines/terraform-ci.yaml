@@ -49,23 +49,21 @@ steps:
     command: 'validate'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-- task: AzureCLI@2
+- task: TerraformTaskV3@3
   displayName: 'Terraform Plan'
   inputs:
-    azureSubscription: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
-    scriptType: 'bash'
-    scriptLocation: 'inlineScript'
-    inlineScript: |
-      set -e
-      terraform plan -no-color -out=tfplan | tee plan.txt
+    provider: 'azurerm'
+    command: 'plan'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
-    failOnStderr: true
+    environmentServiceNameAzureRM: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
+    backendAzureRmResourceGroupName: 'terraform'
+    backendAzureRmStorageAccountName: 'tfstateforterrform'
+    backendAzureRmContainerName: 'tfstate'
+    backendAzureRmKey: '$(Build.SourceBranchName).terraform.tfstate'
+    commandOptions: '-no-color -out=tfplan'
   env:
-    ARM_CLIENT_ID: $(CLIENT_ID)
-    ARM_CLIENT_SECRET: $(CLIENT_SECRET)
-    ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
-    ARM_TENANT_ID: $(TENANT_ID)
     TF_VAR_client_secret: $(CLIENT_SECRET)
+
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Terraform Plan Artifact'
