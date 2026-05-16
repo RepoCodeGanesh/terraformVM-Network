@@ -18,13 +18,12 @@ def summarize_plan(plan_text: str) -> str:
 
 
 def main():
-    # Read the human-readable plan
     with open("plan.txt", "r") as f:
         plan_text = f.read()
 
     summary = summarize_plan(plan_text)
 
-    # Print summary to pipeline logs (with emojis)
+    # Print summary to pipeline logs
     print(summary)
 
     # Build Markdown body for GitHub issue
@@ -36,7 +35,7 @@ def main():
         + "\n```\n</details>\n"
     )
 
-    # Save to file for gh issue create --body-file
+    # Save to file for gh issue create
     with open("issue_body.md", "w") as f:
         f.write(body)
 
