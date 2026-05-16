@@ -1,9 +1,6 @@
 # scripts/terraform_summary.py
 
 def summarize_plan(plan_text: str) -> str:
-    """
-    Counts resources to add/change/destroy by scanning plan.txt.
-    """
     add_count = plan_text.count("will be created")
     change_count = plan_text.count("will be changed")
     destroy_count = plan_text.count("will be destroyed")
