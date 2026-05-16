@@ -1,45 +1,30 @@
-#!/usr/bin/env python3
-import json
+# scripts/terraform_summary.py
 
-with open("plan.json") as f:
-    plan = json.load(f)
+def summarize_plan(plan_text: str) -> str:
+    """
+    Very basic summary: counts resources to add/change/destroy
+    by scanning the human-readable plan.txt.
+    """
+    add_count = plan_text.count("will be created")
+    change_count = plan_text.count("will be changed")
+    destroy_count = plan_text.count("will be destroyed")
 
-# Emoji markers for each action
-markers = {
-    "+": "✅ + → Create",
-    "-": "❌ - → Destroy",
-    "~": "🔄 ~ → Update/Modify",
-    "-/+": "♻️ -/+ → Replace (delete then create)",
-    "+/-": "⚠️ +/- → Create then Destroy",
-    "<=": "📘 <= → Read (data source)"
-}
+    summary = (
+        f"Terraform Plan Summary:\n"
+        f"- Resources to add: {add_count}\n"
+        f"- Resources to change: {change_count}\n"
+        f"- Resources to destroy: {destroy_count}\n"
+    )
+    return summary
 
-actions = {s: [] for s in markers.keys()}
 
-for res in plan.get("resource_changes", []):
-    addr = res["address"]
-    acts = res["change"]["actions"]
+def main():
+    with open("plan.txt", "r") as f:
+        plan_text = f.read()
 
-    if set(acts) == {"create","delete"}:
-        actions["-/+"].append(addr)
-    elif acts == ["create","delete"]:
-        actions["+/-"].append(addr)
-    elif acts == ["create"]:
-        actions["+"].append(addr)
-    elif acts == ["delete"]:
-        actions["-"].append(addr)
-    elif acts == ["update"]:
-        actions["~"].append(addr)
-    elif acts == ["read"]:
-        actions["<="].append(addr)
+    summary = summarize_plan(plan_text)
+    print(summary)
 
-# Print summary header
-print("Terraform Plan Summary\n")
 
-# Print only relevant groups, with numbering
-for symbol, resources in actions.items():
-    if resources:
-        print(markers[symbol])
-        for idx, r in enumerate(resources, start=1):
-            print(f"  {idx}. {r}")
-        print()
+if __name__ == "__main__":
+    main()
