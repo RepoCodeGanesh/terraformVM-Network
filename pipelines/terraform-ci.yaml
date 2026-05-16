@@ -75,7 +75,7 @@ steps:
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
 # Run Python summary script
-- script: python $(System.DefaultWorkingDirectory)/terraformVM-Network/scripts/terraform_summary.py
+- script: python $(System.DefaultWorkingDirectory)/scripts/terraform_summary.py
   displayName: 'Terraform Plan Summary'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
