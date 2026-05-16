@@ -25,12 +25,12 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- task: TerraformInstaller@0
+- task: TerraformInstaller@1
   displayName: 'Install Terraform'
   inputs:
     terraformVersion: '1.5.0'
 
-- task: TerraformTaskV3@3
+- task: TerraformTaskV4@4
   displayName: 'Terraform Init'
   inputs:
     provider: 'azurerm'
@@ -42,14 +42,14 @@ steps:
     backendAzureRmContainerName: 'tfstate'
     backendAzureRmKey: 'prod.terraform.tfstate'
 
-- task: TerraformTaskV3@3
+- task: TerraformTaskV4@4
   displayName: 'Terraform Validate'
   inputs:
     provider: 'azurerm'
     command: 'validate'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-- task: TerraformTaskV3@3
+- task: TerraformTaskV4@4
   displayName: 'Terraform Plan'
   inputs:
     provider: 'azurerm'
