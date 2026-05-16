@@ -1,21 +1,22 @@
+#!/usr/bin/env python3
 import json
 
 with open("plan.json") as f:
     plan = json.load(f)
 
-colors = {
-    "+": "\033[92m",     # green → create
-    "-": "\033[91m",     # red → destroy
-    "~": "\033[93m",     # yellow → update/modify
-    "-/+": "\033[91m",   # red → replace (delete then create)
-    "+/-": "\033[91m",   # red → create then destroy
-    "<=": "\033[94m",    # blue → read (data source)
-    "end": "\033[0m"
+# Emoji markers for each action
+markers = {
+    "+": "✅ + → Create",
+    "-": "❌ - → Destroy",
+    "~": "🔄 ~ → Update/Modify",
+    "-/+": "♻️ -/+ → Replace (delete then create)",
+    "+/-": "⚠️ +/- → Create then Destroy",
+    "<=": "📘 <= → Read (data source)"
 }
 
-actions = {s: [] for s in ["+","-","~","-/+","+/-","<="]}
+actions = {s: [] for s in markers.keys()}
 
-for res in plan["resource_changes"]:
+for res in plan.get("resource_changes", []):
     addr = res["address"]
     acts = res["change"]["actions"]
 
@@ -32,9 +33,16 @@ for res in plan["resource_changes"]:
     elif acts == ["read"]:
         actions["<="].append(addr)
 
+# Print legend header always
+print("Terraform Plan Summary\n")
+for symbol, legend in markers.items():
+    print(legend)
+print()
+
+# Print grouped resources
 for symbol, resources in actions.items():
     if resources:
-        print(f"{colors[symbol]}{symbol}{colors['end']}")
+        print(markers[symbol])
         for r in resources:
             print(f"  {r}")
         print()
