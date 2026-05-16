@@ -93,8 +93,7 @@ steps:
 
     gh issue create \
       --title "Terraform Plan for $(Build.SourceBranchName)" \
-      --body "$(cat $(System.DefaultWorkingDirectory)/plan.txt)" \
-      --label "terraform-plan"
+      --body "$(cat $(System.DefaultWorkingDirectory)/plan.txt)"
   displayName: 'Create GitHub Issue with Terraform Plan'
   env:
     GITHUB_TOKEN: $(GITHUB_TOKEN)
