@@ -33,16 +33,16 @@ for res in plan.get("resource_changes", []):
     elif acts == ["read"]:
         actions["<="].append(addr)
 
-# Print legend header always
+# Print legend once
 print("Terraform Plan Summary\n")
-for symbol, legend in markers.items():
+for legend in markers.values():
     print(legend)
 print()
 
-# Print grouped resources
+# Print only relevant groups, with numbering
 for symbol, resources in actions.items():
     if resources:
         print(markers[symbol])
-        for r in resources:
-            print(f"  {r}")
+        for idx, r in enumerate(resources, start=1):
+            print(f"  {idx}. {r}")
         print()
