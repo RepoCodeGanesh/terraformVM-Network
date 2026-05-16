@@ -69,11 +69,6 @@ steps:
   displayName: 'Generate Terraform Plan Text'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-# Run Python summary script
-- script: python $(System.DefaultWorkingDirectory)/scripts/terraform_summary.py
-  displayName: 'Terraform Plan Summary'
-  workingDirectory: '$(System.DefaultWorkingDirectory)'
-
 # Publish artifacts
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Terraform Plan Artifact'
@@ -88,7 +83,8 @@ steps:
     PathtoPublish: '$(System.DefaultWorkingDirectory)/plan.txt'
     ArtifactName: 'terraform-plan-text'
     publishLocation: 'Container'
- # Create GitHub Issue with Terraform Plan
+
+# Create GitHub Issue with Terraform Plan
 - script: |
     sudo apt-get update
     sudo apt-get install -y gh
