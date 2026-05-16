@@ -12,10 +12,6 @@ def extract_resources(plan_text: str, keyword: str) -> list:
     return matches
 
 def summarize_plan(plan_text: str) -> str:
-    """
-    Build summary with emojis and resource lists.
-    Only include categories with non-zero counts.
-    """
     sections = []
 
     # Add
@@ -67,10 +63,8 @@ def main():
 
     summary = summarize_plan(plan_text)
 
-    # Print summary to pipeline logs
-    print(summary)
+    print(summary)  # pipeline logs
 
-    # Build Markdown body for GitHub issue
     body = (
         summary
         + "\n\n<details>\n<summary>Full Terraform Plan</summary>\n\n"
