@@ -4,10 +4,10 @@ import re
 
 def extract_resources(plan_text: str, keyword: str) -> list:
     """
-    Find resource names associated with a given keyword in plan.txt.
-    Example keywords: 'will be created', 'will be changed', 'will be destroyed'
+    Extract resource identifiers from plan.txt for a given keyword.
     """
-    pattern = rf'resource\s+"([^"]+)"\s+"([^"]+)"\s+{{.*{keyword}'
+    # Match lines like: resource "azurerm_resource_group" "rg" { ... will be created
+    pattern = rf'resource\s+"([^"]+)"\s+"([^"]+)"[^\n]*{0}'.format(keyword)
     matches = re.findall(pattern, plan_text)
     return [f"{m[0]}.{m[1]}" for m in matches]
 
