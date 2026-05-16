@@ -22,14 +22,17 @@ variables:
 - group: Terraform-Secrets
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: ubuntu-latest
 
 steps:
+
+# Install Terraform
 - task: TerraformInstaller@1
   displayName: 'Install Terraform'
   inputs:
     terraformVersion: '1.5.0'
 
+# Terraform Init
 - task: TerraformTaskV4@4
   displayName: 'Terraform Init'
   inputs:
@@ -40,8 +43,9 @@ steps:
     backendAzureRmResourceGroupName: 'terraform'
     backendAzureRmStorageAccountName: 'tfstateforterrform'
     backendAzureRmContainerName: 'tfstate'
-    backendAzureRmKey: 'prod.terraform.tfstate'
+    backendAzureRmKey: '$(Build.SourceBranchName).terraform.tfstate'
 
+# Terraform Validate
 - task: TerraformTaskV4@4
   displayName: 'Terraform Validate'
   inputs:
@@ -49,6 +53,7 @@ steps:
     command: 'validate'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
 
+# Terraform Plan
 - task: TerraformTaskV4@4
   displayName: 'Terraform Plan'
   inputs:
@@ -56,32 +61,39 @@ steps:
     command: 'plan'
     workingDirectory: '$(System.DefaultWorkingDirectory)'
     environmentServiceNameAzureRM: '64d51c9d-f7f6-4ff2-8341-75d6cc57fe01'
-    backendAzureRmResourceGroupName: 'terraform'
-    backendAzureRmStorageAccountName: 'tfstateforterrform'
-    backendAzureRmContainerName: 'tfstate'
-    backendAzureRmKey: '$(Build.SourceBranchName).terraform.tfstate'
     commandOptions: '-no-color -out=tfplan'
   env:
     TF_VAR_client_secret: $(CLIENT_SECRET)
 
-# Generate human-readable plan.txt
-- script: terraform show -no-color tfplan > plan.txt
+# Generate plan.txt
+- script: |
+    terraform show -no-color tfplan > plan.txt
   displayName: 'Generate Terraform Plan Text'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-# Run Python summary script (creates issue_body.md)
-- script: python $(System.DefaultWorkingDirectory)/scripts/terraform_summary.py
-  displayName: 'Terraform Plan Summary'
+# Verify files
+- script: |
+    ls -la
+    echo "------------ PLAN TXT -------------"
+    head -100 plan.txt
+  displayName: 'Verify Generated Files'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-# Publish artifacts
+# Run Python Summary Script
+- script: |
+    python3 scripts/terraform_summary.py
+  displayName: 'Generate Terraform Summary'
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+# Publish tfplan artifact
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Terraform Plan Artifact'
+  displayName: 'Publish Terraform Binary Plan'
   inputs:
     PathtoPublish: '$(System.DefaultWorkingDirectory)/tfplan'
     ArtifactName: 'terraform-plan'
     publishLocation: 'Container'
 
+# Publish plan.txt
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Terraform Plan Text'
   inputs:
@@ -89,16 +101,26 @@ steps:
     ArtifactName: 'terraform-plan-text'
     publishLocation: 'Container'
 
-# Create GitHub Issue with Terraform Plan (summary + collapsible full plan)
+# Publish GitHub Issue body
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish GitHub Issue Body'
+  inputs:
+    PathtoPublish: '$(System.DefaultWorkingDirectory)/issue_body.md'
+    ArtifactName: 'terraform-issue-body'
+    publishLocation: 'Container'
+
+# Create GitHub Issue
 - script: |
     sudo apt-get update
     sudo apt-get install -y gh
 
-    echo "$(GITHUB_TOKEN)" | gh auth login --with-token
+    echo "$(GITHUB_TOKEN)" > github_token.txt
+    gh auth login --with-token < github_token.txt
 
     gh issue create \
       --title "Terraform Plan for $(Build.SourceBranchName)" \
-      --body-file "$(System.DefaultWorkingDirectory)/issue_body.md"
-  displayName: 'Create GitHub Issue with Terraform Plan'
+      --body-file issue_body.md
+  displayName: 'Create GitHub Issue'
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
   env:
     GITHUB_TOKEN: $(GITHUB_TOKEN)
