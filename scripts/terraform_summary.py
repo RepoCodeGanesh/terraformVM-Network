@@ -2,28 +2,43 @@
 
 def summarize_plan(plan_text: str) -> str:
     """
-    Very basic summary: counts resources to add/change/destroy
-    by scanning the human-readable plan.txt.
+    Counts resources to add/change/destroy by scanning plan.txt.
     """
     add_count = plan_text.count("will be created")
     change_count = plan_text.count("will be changed")
     destroy_count = plan_text.count("will be destroyed")
 
     summary = (
-        f"Terraform Plan Summary:\n"
-        f"- Resources to add: {add_count}\n"
-        f"- Resources to change: {change_count}\n"
-        f"- Resources to destroy: {destroy_count}\n"
+        f"## Terraform Plan Summary\n"
+        f"🟢 Resources to add: {add_count}\n"
+        f"🟡 Resources to change: {change_count}\n"
+        f"🔴 Resources to destroy: {destroy_count}\n"
     )
     return summary
 
 
 def main():
+    # Read the human-readable plan
     with open("plan.txt", "r") as f:
         plan_text = f.read()
 
     summary = summarize_plan(plan_text)
+
+    # Print summary to pipeline logs (with emojis)
     print(summary)
+
+    # Build Markdown body for GitHub issue
+    body = (
+        summary
+        + "\n\n<details>\n<summary>Full Terraform Plan</summary>\n\n"
+        + "```\n"
+        + plan_text
+        + "\n```\n</details>\n"
+    )
+
+    # Save to file for gh issue create --body-file
+    with open("issue_body.md", "w") as f:
+        f.write(body)
 
 
 if __name__ == "__main__":
