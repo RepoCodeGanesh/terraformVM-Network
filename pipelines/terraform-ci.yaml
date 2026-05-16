@@ -88,4 +88,17 @@ steps:
     PathtoPublish: '$(System.DefaultWorkingDirectory)/plan.txt'
     ArtifactName: 'terraform-plan-text'
     publishLocation: 'Container'
+ # Create GitHub Issue with Terraform Plan
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y gh
 
+    echo "$(GITHUB_TOKEN)" | gh auth login --with-token
+
+    gh issue create \
+      --title "Terraform Plan for $(Build.SourceBranchName)" \
+      --body "$(cat $(System.DefaultWorkingDirectory)/plan.txt)" \
+      --label "terraform-plan"
+  displayName: 'Create GitHub Issue with Terraform Plan'
+  env:
+    GITHUB_TOKEN: $(GITHUB_TOKEN)
