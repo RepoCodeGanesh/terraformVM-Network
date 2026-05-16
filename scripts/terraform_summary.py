@@ -50,7 +50,7 @@ def summarize_plan(plan_text: str) -> str:
             "\n".join([f"   {i+1}. {r}" for i, r in enumerate(replace_resources)])
         ))
 
-    # Recreate (+/-) – rare, but included
+    # Recreate (+/-)
     recreate_resources = extract_resources(plan_text, "will be recreated")
     if recreate_resources:
         sections.append("♻️ (+/-) Resources to recreate (delete after create): {}\n{}".format(
@@ -79,7 +79,6 @@ def main():
         + "\n```\n</details>\n"
     )
 
-    # Save to file for gh issue create
     with open("issue_body.md", "w") as f:
         f.write(body)
 
