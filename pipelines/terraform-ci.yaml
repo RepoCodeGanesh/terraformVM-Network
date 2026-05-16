@@ -69,11 +69,6 @@ steps:
   displayName: 'Generate Terraform Plan Text'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-# Generate JSON plan
-- script: terraform show -json tfplan > plan.json
-  displayName: 'Generate Terraform Plan JSON'
-  workingDirectory: '$(System.DefaultWorkingDirectory)'
-
 # Run Python summary script
 - script: python $(System.DefaultWorkingDirectory)/scripts/terraform_summary.py
   displayName: 'Terraform Plan Summary'
@@ -94,9 +89,3 @@ steps:
     ArtifactName: 'terraform-plan-text'
     publishLocation: 'Container'
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Terraform Plan JSON'
-  inputs:
-    PathtoPublish: '$(System.DefaultWorkingDirectory)/plan.json'
-    ArtifactName: 'terraform-plan-json'
-    publishLocation: 'Container'
