@@ -19,7 +19,7 @@ output "vnet_ids" {
 }
 
 #output "subnet_ids" {
-# description = "The IDs of the subnets"
+# description = "The IDs of the subnets-s"
 #value       = module.network.subnet_ids
 #}
 output "vm_subnet1_id" {
